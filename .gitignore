@@ -39,3 +39,6 @@ node_modules
 
 # NYC covergae information
 .nyc_output
+
+.idea
+.npmrc

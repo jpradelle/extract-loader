@@ -1,3 +1,11 @@
+# [1.0.0](https://github.com/jpradelle/extract-loader/tag/v1.0.0) (2024-07-31)
+
+### Features
+
+Fork of [extract-loader](https://github.com/peerigon/extract-loader) for webpack 5 support
+
+# webpack-loader
+
 # [5.1.0](https://github.com/peerigon/extract-loader/compare/v5.0.1...v5.1.0) (2020-05-26)
 
 

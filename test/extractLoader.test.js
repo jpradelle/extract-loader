@@ -1,18 +1,18 @@
 /* eslint-disable promise/always-return, promise/prefer-await-to-then */
 import path from "path";
 import fs from "fs";
-import rimRaf from "rimraf";
-import chai, {expect} from "chai";
+import {sync} from "rimraf";
+import {use, expect} from "chai";
 import chaiFs from "chai-fs";
 import extractLoader from "../src/extractLoader.js";
 import compile from "./support/compile.js";
 
-chai.use(chaiFs);
+use(chaiFs);
 
 describe("extractLoader", () => {
     // Using beforeEach so that we can inspect the test compilation afterwards
     beforeEach(() => {
-        rimRaf.sync(path.resolve(__dirname, "dist"));
+        sync(path.resolve(__dirname, "dist"));
     });
     it("should extract 'hello' into simple.js", () =>
         compile({testModule: "simple.js"}).then(() => {
@@ -117,7 +117,7 @@ describe("extractLoader", () => {
                 __dirname,
                 "dist/deep-dist.css"
             );
-            // const imgCss = path.resolve(__dirname, "dist/img-dist.css");
+            // const imgCss = path.resolve(dirname, "dist/img-dist.css");
             const imgJpg = path.resolve(__dirname, "dist/hi-dist.jpg");
 
             expect(deepCss).to.be.a.file();
