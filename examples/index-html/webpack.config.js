@@ -6,6 +6,10 @@ module.exports = ({ mode }) => {
 
     return {
         mode,
+        output: {
+            publicPath: '',
+            assetModuleFilename: 'assets/[hash][ext]'
+        },
         entry: [
             pathToMainJs,
             pathToIndexHtml
@@ -21,7 +25,7 @@ module.exports = ({ mode }) => {
                         {
                             loader: "html-loader",
                             options: {
-                                attrs: ["img:src", "link:href"]
+                                esModule: false
                             }
                         }
                     ]
@@ -35,14 +39,15 @@ module.exports = ({ mode }) => {
                         {
                             loader: "css-loader",
                             options: {
-                                sourceMap: true
+                                sourceMap: true,
+                                esModule: false
                             }
                         }
                     ]
                 },
                 {
                     test: /\.jpg$/,
-                    use: "file-loader"
+                    type: 'asset/resource',
                 }
             ]
         }

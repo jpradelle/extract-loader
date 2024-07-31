@@ -6,7 +6,7 @@ const pathToExtractLoader = path.resolve(
     "../../src/extractLoader.js"
 );
 
-function compile({testModule, publicPath, loaderOptions}) {
+function compile({testModule, publicPath = "", loaderOptions = {}}) {
     const testModulePath = path.resolve(__dirname, "../modules/", testModule);
 
     return new Promise((resolve, reject) => {
@@ -18,6 +18,7 @@ function compile({testModule, publicPath, loaderOptions}) {
                     path: path.resolve(__dirname, "../dist"),
                     filename: "bundle.js",
                     publicPath,
+                    assetModuleFilename: "[name]-dist[ext]",
                 },
                 module: {
                     rules: [
@@ -53,15 +54,14 @@ function compile({testModule, publicPath, loaderOptions}) {
                                 {
                                     loader: "html-loader",
                                     options: {
-                                        attrs: ["img:src", "link:href"],
-                                        interpolate: true,
+                                        esModule: false,
                                     },
                                 },
                             ],
                         },
                         {
                             test: /\.css$/,
-                            loaders: [
+                            use: [
                                 {
                                     loader: "file-loader",
                                     options: {
@@ -75,6 +75,7 @@ function compile({testModule, publicPath, loaderOptions}) {
                                 {
                                     loader: "css-loader",
                                     options: {
+                                        esModule: false,
                                         sourceMap: true,
                                     },
                                 },
@@ -82,14 +83,7 @@ function compile({testModule, publicPath, loaderOptions}) {
                         },
                         {
                             test: /\.jpg$/,
-                            loaders: [
-                                {
-                                    loader: "file-loader",
-                                    options: {
-                                        name: "[name]-dist.[ext]",
-                                    },
-                                },
-                            ],
+                            type: "asset/resource",
                         },
                     ],
                 },

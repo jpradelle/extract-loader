@@ -38,18 +38,24 @@ Bundling CSS with webpack has some nice advantages like referencing images and f
 With the extract-loader, you are able to reference your `main.css` as regular `entry`. The following `webpack.config.js` shows how to load your styles with the [style-loader](https://github.com/webpack/style-loader) in development and as separate file in production.
 
 ```js
-module.exports = ({ mode }) => {
+module.exports = (env, { mode }) => {
     const pathToMainCss = require.resolve("./app/main.css");
     const loaders = [{
         loader: "css-loader",
         options: {
+            esModule: false,
             sourceMap: true
         }
     }];
 
     if (mode === "production") {
         loaders.unshift(
-            "file-loader",
+            {
+                loader: "file-loader",
+                options: {
+                    name: '[name].[ext]',
+                }
+            },
             "extract-loader"
         );
     } else {
@@ -63,7 +69,7 @@ module.exports = ({ mode }) => {
             rules: [
                 {
                     test: pathToMainCss,
-                    loaders: loaders
+                    use: loaders
                 },
             ]
         }
@@ -82,6 +88,10 @@ module.exports = ({ mode }) => {
 
     return {
         mode,
+        output: {
+            publicPath: '',
+            assetModuleFilename: 'assets/[hash][ext]'
+        },
         entry: [
             pathToMainJs,
             pathToIndexHtml
@@ -96,7 +106,7 @@ module.exports = ({ mode }) => {
                         {
                             loader: "html-loader",
                             options: {
-                                attrs: ["img:src", "link:href"]
+                                esModule: false
                             }
                         }
                     ]
@@ -109,14 +119,15 @@ module.exports = ({ mode }) => {
                         {
                             loader: "css-loader",
                             options: {
-                                sourceMap: true
+                                sourceMap: true,
+                                esModule: false
                             }
                         }
                     ]
                 },
                 {
                     test: /\.jpg$/,
-                    use: "file-loader"
+                    type: 'asset/resource',
                 }
             ]
         }
@@ -146,7 +157,7 @@ into
     <link href="7c57758b88216530ef48069c2a4c685a.css" type="text/css" rel="stylesheet">
 </head>
 <body>
-    <img src="6ac05174ae9b62257ff3aa8be43cf828.jpg">
+    <img src="assets/6ac05174ae9b62257ff3aa8be43cf828.jpg">
 </body>
 </html>
 ```
@@ -202,6 +213,9 @@ module.exports = {
                     },
                     {
                         loader: "css-loader",
+                        options: {
+                            esModule: false,
+                        }
                     },
                 ],
             }
@@ -238,6 +252,9 @@ module.exports = {
                     },
                     {
                         loader: "css-loader",
+                        options: {
+                            esModule: false,
+                        }
                     },
                 ],
             }

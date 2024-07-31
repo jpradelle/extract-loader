@@ -1,9 +1,8 @@
 import vm from "vm";
 import path from "path";
-import {getOptions} from "loader-utils";
 import resolve from "resolve";
 import btoa from "btoa";
-import * as babel from "babel-core";
+import * as babel from "@babel/core";
 
 /**
  * @typedef {Object} LoaderContext
@@ -24,7 +23,7 @@ import * as babel from "babel-core";
  */
 async function extractLoader(src) {
     const done = this.async();
-    const options = getOptions(this) || {};
+    const options = this.getOptions() || {};
     const publicPath = getPublicPath(options, this);
 
     this.cacheable();
@@ -47,11 +46,22 @@ function evalDependencyGraph({loaderContext, src, filename, publicPath = ""}) {
     function loadModule(filename) {
         return new Promise((resolve, reject) => {
             // loaderContext.loadModule automatically calls loaderContext.addDependency for all requested modules
-            loaderContext.loadModule(filename, (error, src) => {
+            loaderContext.loadModule(filename, (error, src, sourceMap, module) => {
                 if (error) {
                     reject(error);
                 } else {
-                    resolve(src);
+                    if (module.type.startsWith("asset")) {
+                        // Load asset and include them in build
+                        loaderContext.importModule(filename, loaderContext.getOptions(), (importError, importSrc) => {
+                            if (importError) {
+                                reject(importError);
+                            } else {
+                                resolve(importSrc.default ? importSrc.default : importSrc);
+                            }
+                        });
+                    } else {
+                        resolve(evalModule(src, module.resource));
+                    }
                 }
             });
         });
@@ -98,9 +108,9 @@ function evalDependencyGraph({loaderContext, src, filename, publicPath = ""}) {
             babelrc: false,
             presets: [
                 [
-                    require("babel-preset-env"), {
+                    require("@babel/preset-env"), {
                         modules: "commonjs",
-                        targets: {nodejs: "current"},
+                        targets: {node: "current"},
                     },
                 ],
             ],
@@ -162,11 +172,7 @@ function evalDependencyGraph({loaderContext, src, filename, publicPath = ""}) {
         script.runInNewContext(sandbox);
 
         const extractedDependencyContent = await Promise.all(
-            newDependencies.map(async ({absolutePath, absoluteRequest}) => {
-                const src = await loadModule(absoluteRequest);
-
-                return evalModule(src, absolutePath);
-            })
+            newDependencies.map(({absoluteRequest}) => loadModule(absoluteRequest))
         );
         const contentWithPlaceholders = extractExports(sandbox.module.exports);
         const extractedContent = extractedDependencyContent.reduce((content, dependencyContent, idx) => {

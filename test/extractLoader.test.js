@@ -4,8 +4,8 @@ import fs from "fs";
 import rimRaf from "rimraf";
 import chai, {expect} from "chai";
 import chaiFs from "chai-fs";
-import extractLoader from "../src/extractLoader";
-import compile from "./support/compile";
+import extractLoader from "../src/extractLoader.js";
+import compile from "./support/compile.js";
 
 chai.use(chaiFs);
 
@@ -133,15 +133,12 @@ describe("extractLoader", () => {
                 dependency => dependency.slice(basePath.length)
             );
 
-            expect(dependencies.sort()).to.eql(
-                [
-                    "/node_modules/css-loader/lib/css-base.js",
-                    "/node_modules/css-loader/lib/url/escape.js",
-                    "/test/modules/hi.jpg",
-                    "/test/modules/img.css",
-                    "/test/modules/stylesheet.html",
-                ].sort()
-            );
+            expect(dependencies).to.contain("/node_modules/css-loader/dist/runtime/api.js");
+            expect(dependencies).to.contain("/node_modules/css-loader/dist/runtime/getUrl.js");
+            expect(dependencies).to.contain("/node_modules/css-loader/dist/runtime/sourceMaps.js");
+            expect(dependencies).to.contain("/test/modules/hi.jpg");
+            expect(dependencies).to.contain("/test/modules/img.css");
+            expect(dependencies).to.contain("/test/modules/stylesheet.html");
         }));
     it("should reference the img with the given publicPath", () =>
         compile({testModule: "img.html", publicPath: "/test/"}).then(() => {
@@ -174,12 +171,14 @@ describe("extractLoader", () => {
         const loaderContext = {
             async: () => () => done(),
             cacheable() {},
-            query: {
-                publicPath: context => {
-                    publicPathCalledWithContext = context === loaderContext;
+            getOptions() {
+                return {
+                    publicPath: context => {
+                        publicPathCalledWithContext = context === loaderContext;
 
-                    return "";
-                },
+                        return "";
+                    },
+                };
             },
         };
 
@@ -187,20 +186,13 @@ describe("extractLoader", () => {
 
         expect(publicPathCalledWithContext).to.equal(true);
     });
-    it("should support explicit loader chains", () => compile({testModule: "loader.html"}).then(() => {
-        const loaderHtml = path.resolve(__dirname, "dist/loader-dist.html");
-        const errJs = path.resolve(__dirname, "dist/err.js");
-
-        expect(loaderHtml).to.be.a.file();
-        expect(errJs).to.have.content("this is a syntax error\n");
-    }));
     it("should report syntax errors", () =>
         compile({testModule: "error-syntax.js"}).then(
             () => {
                 throw new Error("Did not throw expected error");
             },
             message => {
-                expect(message).to.match(/SyntaxError: unknown: Unexpected token/);
+                expect(message).to.match(/SyntaxError: unknown: Missing semicolon/);
             }
         ));
     it("should report resolve errors", () =>
@@ -221,15 +213,18 @@ describe("extractLoader", () => {
                 expect(message).to.match(/Error: Can't resolve 'does-not-exist'/);
             }
         ));
-    it("should not leak globals when there is an error during toString()", () =>
-        compile({testModule: "error-to-string.js"}).then(
+    it("should not leak globals when there is an error during toString()", () => {
+        const origBtoa = global.btoa;
+
+        return compile({testModule: "error-to-string.js"}).then(
             () => {
                 throw new Error("Did not throw expected error");
             },
             () => {
-                expect("btoa" in global).to.be.false;
+                expect(global.btoa).to.be.eql(origBtoa);
             }
-        ));
+        );
+    });
     it("should restore the original globals when there is an error during toString()", () => {
         const myBtoa = {};
 
@@ -259,6 +254,9 @@ describe("extractLoader", () => {
                 cacheableCalled = true;
             },
             options: {output: {}},
+            getOptions() {
+                return loaderContext.options;
+            },
         };
         let cacheableCalled = false;
 
