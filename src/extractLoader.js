@@ -56,7 +56,15 @@ function evalDependencyGraph({loaderContext, src, filename, publicPath = ""}) {
                             if (importError) {
                                 reject(importError);
                             } else {
-                                resolve(importSrc.default ? importSrc.default : importSrc);
+                                const assetPath = importSrc.default ? importSrc.default : importSrc;
+                                if (typeof assetPath === "string") {
+                                    resolve(assetPath);
+                                } else {
+                                    // Not sure why importModule sometimes doesn't return asset path, load it again ...
+                                    loaderContext.loadModule(filename, (error, src, sourceMap, module) => {
+                                        resolve(module.buildInfo.filename);
+                                    });
+                                }
                             }
                         });
                     } else {
